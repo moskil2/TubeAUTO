@@ -1,0 +1,10 @@
+*.apk
+*.aab
+app/build/
+build/
+.gradle/
+.kotlin/
+local.properties
+narzedzia/*.png
+narzedzia/symulator.log
+narzedzia/polecenia.txt
