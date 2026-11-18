@@ -8,3 +8,7 @@ local.properties
 narzedzia/*.png
 narzedzia/symulator.log
 narzedzia/polecenia.txt
+klucz/
+HISTORIA.md
+PLAN.md
+USTALENIA.md

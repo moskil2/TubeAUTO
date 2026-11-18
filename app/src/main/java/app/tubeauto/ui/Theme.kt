@@ -1,4 +1,4 @@
-package app.youtubeauto.ui
+package app.tubeauto.ui
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.size
@@ -23,7 +23,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import app.youtubeauto.R
+import app.tubeauto.R
 
 /** Kolory jak w OnlyMusic, z fioletów przestawione na czerwienie TubeAUTO. */
 object Pal {

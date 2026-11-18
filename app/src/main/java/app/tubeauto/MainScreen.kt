@@ -1,4 +1,4 @@
-package app.youtubeauto
+package app.tubeauto
 
 import android.graphics.Rect
 import android.net.Uri
@@ -171,10 +171,10 @@ class MainScreen(carContext: CarContext) : Screen(carContext) {
         // Powrót z ekranu wpisywania ("Wstecz") też zwalnia blokadę ponownego otwarcia
         searchOpen = false
         val strip = ActionStrip.Builder()
-            .addAction(button("Wstecz") { if (session.isOpen) session.goBack() })
-            .addAction(button("Start") { if (session.isOpen) session.loadUri(Browser.HOME_URL) })
-            .addAction(button("Odśwież") { if (session.isOpen) session.reload() })
-            .addAction(button("Wyjdź") { carContext.finishCarApp() })
+            .addAction(button("Back") { if (session.isOpen) session.goBack() })
+            .addAction(button("Home") { if (session.isOpen) session.loadUri(Browser.HOME_URL) })
+            .addAction(button("Reload") { if (session.isOpen) session.reload() })
+            .addAction(button("Exit") { carContext.finishCarApp() })
             .build()
         return NavigationTemplate.Builder()
             .setActionStrip(strip)

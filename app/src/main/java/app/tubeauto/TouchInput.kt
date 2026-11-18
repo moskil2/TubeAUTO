@@ -1,4 +1,4 @@
-package app.youtubeauto
+package app.tubeauto
 
 import android.os.Handler
 import android.os.Looper

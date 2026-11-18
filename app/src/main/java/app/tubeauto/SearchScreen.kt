@@ -1,4 +1,4 @@
-package app.youtubeauto
+package app.tubeauto
 
 import androidx.car.app.CarContext
 import androidx.car.app.Screen
@@ -28,11 +28,11 @@ class SearchScreen(
             }
         })
             .setHeaderAction(Action.BACK)
-            .setSearchHint("Wpisz tekst")
+            .setSearchHint("Type here")
             .setShowKeyboardByDefault(true)
             .setItemList(
                 ItemList.Builder()
-                    .setNoItemsMessage("Wpisz tekst i zatwierdź")
+                    .setNoItemsMessage("Type and confirm")
                     .build()
             )
             .build()

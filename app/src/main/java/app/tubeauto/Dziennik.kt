@@ -1,4 +1,4 @@
-package app.youtubeauto
+package app.tubeauto
 
 import android.content.Context
 import android.os.Process
@@ -17,7 +17,7 @@ import java.util.Locale
  *   i silnik Gecko), maks. 5 plików po 1 MB, najstarszy usuwany.
  * - files/dziennik/bledy.txt: nieobsłużone błędy programu z pełnym opisem.
  *
- * Odczyt: adb shell run-as app.youtubeauto ls files/dziennik
+ * Odczyt: adb shell run-as app.tubeauto ls files/dziennik
  */
 object Dziennik {
 

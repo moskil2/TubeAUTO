@@ -1,5 +1,6 @@
 import java.text.SimpleDateFormat
 import java.util.Date
+import java.util.Properties
 
 // AGP 9 ma wbudowaną obsługę Kotlina, ale w wersji 2.2.0, za starej dla GeckoView 160
 // (biblioteki Kotlin 2.4). Dlatego wskazujemy nowszy Kotlin 2.4.20.
@@ -21,7 +22,7 @@ plugins {
 apply(plugin = "org.jetbrains.kotlin.plugin.compose")
 
 android {
-    namespace = "app.youtubeauto"
+    namespace = "app.tubeauto"
     // GeckoView 160 wymaga kompilacji pod Android 37.2
     compileSdk {
         version = release(37) {
@@ -30,17 +31,41 @@ android {
     }
 
     defaultConfig {
-        applicationId = "app.youtubeauto"
+        applicationId = "app.tubeauto"
         minSdk = 26
         targetSdk = 36
-        versionCode = 26
-        versionName = "0.2.6"
+        versionCode = 30
+        versionName = "0.3.0"
         // Data budowania do ekranu "O aplikacji"
         buildConfigField("String", "BUILD_STAMP", "\"${SimpleDateFormat("yyyy-MM-dd HH:mm").format(Date())}\"")
 
         // Tylko procesor 64-bit ARM (Samsung S24 Ultra), żeby APK był mniejszy
         ndk {
             abiFilters += "arm64-v8a"
+        }
+    }
+
+    // Klucz do wydań w C:\TEMP\TubeAUTO\klucz (poza repo, kopia zapasowa poza komputerem)
+    val keyProps = Properties().apply {
+        val f = rootDir.parentFile.resolve("klucz/keystore.properties")
+        if (f.exists()) f.inputStream().use { load(it) }
+    }
+    signingConfigs {
+        if (keyProps.containsKey("storeFile")) {
+            create("release") {
+                storeFile = rootDir.resolve(keyProps.getProperty("storeFile"))
+                storePassword = keyProps.getProperty("storePassword")
+                keyAlias = keyProps.getProperty("keyAlias")
+                keyPassword = keyProps.getProperty("keyPassword")
+            }
+        }
+    }
+
+    buildTypes {
+        // Wersja do pobrania z GitHub: podpisana kluczem do wydań
+        release {
+            isMinifyEnabled = false
+            signingConfig = signingConfigs.findByName("release")
         }
     }
 
@@ -66,18 +91,19 @@ dependencies {
     implementation("androidx.activity:activity-compose:1.10.1")
 }
 
-// Po każdym budowaniu kopia APK trafia do folderu głównego projektu
-// jako TubeAUTO-<wersja>.apk (np. C:\TEMP\TubeAUTO\TubeAUTO-0.2.3.apk).
-val copyApkToMainFolder by tasks.registering {
+// Po budowaniu kopia APK trafia do folderu głównego projektu jako TubeAUTO-<wersja>.apk
+// (wersja do pobrania, release) albo TubeAUTO-<wersja>-debug.apk (wersja testowa).
+fun copyApk(type: String, suffix: String) = tasks.registering {
     val version = android.defaultConfig.versionName
-    val src = layout.buildDirectory.file("outputs/apk/debug/TubeAUTO-debug.apk")
-    val dst = rootDir.parentFile.resolve("TubeAUTO-$version.apk")
+    val src = layout.buildDirectory.file("outputs/apk/$type/TubeAUTO-$type.apk")
+    val dst = rootDir.parentFile.resolve("TubeAUTO-$version$suffix.apk")
     doLast {
         src.get().asFile.copyTo(dst, overwrite = true)
         println("APK skopiowany: $dst")
     }
 }
+val copyReleaseApk by copyApk("release", "")
+val copyDebugApk by copyApk("debug", "-debug")
 
-tasks.matching { it.name == "assembleDebug" }.configureEach {
-    finalizedBy(copyApkToMainFolder)
-}
+tasks.matching { it.name == "assembleRelease" }.configureEach { finalizedBy(copyReleaseApk) }
+tasks.matching { it.name == "assembleDebug" }.configureEach { finalizedBy(copyDebugApk) }

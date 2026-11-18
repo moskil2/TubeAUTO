@@ -1,4 +1,4 @@
-package app.youtubeauto
+package app.tubeauto
 
 import android.content.Context
 import android.os.Handler
@@ -50,6 +50,13 @@ object Browser {
         whenUblockReady { ext -> checkUpdate(rt.webExtensionController, ext, context.applicationContext, done) }
     }
 
+    /** Zapisuje tryb stron i od razu zmienia go w działającym silniku. */
+    fun setTheme(context: Context, theme: Settings.Theme) {
+        Settings.saveTheme(context, theme)
+        runtime?.settings?.setPreferredColorScheme(theme.gecko)
+        Log.i(TAG, "Tryb stron: ${theme.name}")
+    }
+
     fun runtime(context: Context, dpi: Int, width: Int, height: Int): GeckoRuntime =
         runtime ?: GeckoRuntime.create(
             context.applicationContext,
@@ -58,7 +65,9 @@ object Browser {
                 .displayDensityOverride(dpi / 160f)
                 .screenSizeOverride(width, height)
                 // Podgląd strony z Firefoksa na komputerze (about:debugging, tylko przez USB)
-                .remoteDebuggingEnabled(true)
+                .remoteDebuggingEnabled(BuildConfig.DEBUG)
+                // Tryb ciemny/jasny stron z ustawień aplikacji (Settings > Page theme)
+                .preferredColorScheme(Settings.theme(context).gecko)
                 .build()
         ).also {
             runtime = it
@@ -183,20 +192,20 @@ object Browser {
             { updated ->
                 if (updated == null) {
                     Log.i(TAG, "uBlock: brak nowszej wersji")
-                    UblockStatus.saveCheck(context, "aktualna")
-                    done("Masz aktualną wersję ${ext.metaData.version}.")
+                    UblockStatus.saveCheck(context, "up to date")
+                    done("You have the latest version ${ext.metaData.version}.")
                 } else {
                     Log.i(TAG, "uBlock zaktualizowany do ${updated.metaData.version}")
                     ublock = updated
                     UblockStatus.saveVersion(context, updated.metaData.version)
-                    UblockStatus.saveCheck(context, "zaktualizowano do ${updated.metaData.version}")
-                    done("Zaktualizowano do ${updated.metaData.version}.")
+                    UblockStatus.saveCheck(context, "updated to ${updated.metaData.version}")
+                    done("Updated to ${updated.metaData.version}.")
                 }
             },
             { e ->
                 Log.i(TAG, "uBlock: sprawdzenie aktualizacji niemożliwe (${e?.message})")
-                UblockStatus.saveCheck(context, "nie udało się sprawdzić")
-                done("Nie udało się sprawdzić (brak internetu?).")
+                UblockStatus.saveCheck(context, "check not possible")
+                done("Could not check (no internet?).")
             }
         )
     }

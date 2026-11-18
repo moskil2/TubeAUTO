@@ -1,4 +1,4 @@
-package app.youtubeauto.ui
+package app.tubeauto.ui
 
 import android.app.Activity
 import androidx.activity.compose.BackHandler
@@ -54,9 +54,10 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import app.youtubeauto.BuildConfig
-import app.youtubeauto.Browser
-import app.youtubeauto.UblockStatus
+import app.tubeauto.BuildConfig
+import app.tubeauto.Browser
+import app.tubeauto.Settings
+import app.tubeauto.UblockStatus
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.ui.viewinterop.AndroidView
 import org.mozilla.geckoview.GeckoSession
@@ -64,7 +65,7 @@ import org.mozilla.geckoview.GeckoView
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
-import app.youtubeauto.R
+import app.tubeauto.R
 
 private const val CONTACT_EMAIL = "tomasz.pieczara@gazeta.pl"
 private const val WEBSITE = "spotrobotics.app"
@@ -129,9 +130,9 @@ private fun SideMenu(open: Boolean, current: Screen, onNavigate: (Screen) -> Uni
     if (progress == 0f) return
     BackHandler(enabled = open, onBack = onDismiss)
     val entries = listOf(
-        MenuEntry("Ustawienia", Ic.Settings, Screen.Settings),
+        MenuEntry("Settings", Ic.Settings, Screen.Settings),
         MenuEntry("uBlock", Ic.Shield, Screen.Ublock),
-        MenuEntry("O aplikacji", Ic.Info, Screen.About),
+        MenuEntry("About", Ic.Info, Screen.About),
     )
     val shape = RoundedCornerShape(topEnd = 28.dp, bottomEnd = 28.dp)
     Box(Modifier.fillMaxSize()) {
@@ -162,7 +163,7 @@ private fun SideMenu(open: Boolean, current: Screen, onNavigate: (Screen) -> Uni
             Row(verticalAlignment = Alignment.Top) {
                 Column(Modifier.weight(1f).padding(start = 6.dp)) {
                     Wordmark(19)
-                    Txt("YouTube na ekranie auta", size = 12.sp, color = Pal.Text3)
+                    Txt("YouTube on your car screen", size = 12.sp, color = Pal.Text3)
                 }
                 Row(
                     Modifier
@@ -174,7 +175,7 @@ private fun SideMenu(open: Boolean, current: Screen, onNavigate: (Screen) -> Uni
                 ) {
                     Icn(Ic.Power, Pal.Close, 14.dp)
                     Spacer(Modifier.width(6.dp))
-                    Txt("ZAMKNIJ", size = 12.sp, weight = FontWeight.SemiBold, color = Pal.Close)
+                    Txt("CLOSE", size = 12.sp, weight = FontWeight.SemiBold, color = Pal.Close)
                 }
             }
             Spacer(Modifier.height(22.dp))
@@ -201,11 +202,27 @@ private fun SideMenu(open: Boolean, current: Screen, onNavigate: (Screen) -> Uni
 
 @Composable
 private fun SettingsScreen(back: () -> Unit) {
+    val context = LocalContext.current
+    var theme by remember { mutableStateOf(Settings.theme(context)) }
     Column(Modifier.fillMaxSize()) {
-        ScreenHeader("Ustawienia", null, back)
-        Column(Modifier.weight(1f).padding(horizontal = 16.dp, vertical = 4.dp)) {
+        ScreenHeader("Settings", null, back)
+        Column(Modifier.weight(1f).padding(horizontal = 16.dp, vertical = 4.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            SectionLabel("Page theme")
             Card {
-                Txt("Na razie brak ustawień", Modifier.padding(16.dp), size = 14.sp, color = Pal.Text2)
+                Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Settings.Theme.entries.forEach { t ->
+                            ChoiceButton(t.label, selected = t == theme) {
+                                theme = t
+                                Browser.setTheme(context, t)
+                            }
+                        }
+                    }
+                    Txt(
+                        "Dark or light mode for YouTube and other pages. System follows the phone setting. If a theme is chosen in YouTube itself, YouTube uses that one.",
+                        size = 13.sp, color = Pal.Text2, maxLines = 5, lineHeight = 19.sp,
+                    )
+                }
             }
         }
         Spacer(Modifier.navigationBarsPadding())
@@ -223,7 +240,7 @@ private fun UblockScreen(back: () -> Unit, go: (Screen) -> Unit) {
     var checking by remember { mutableStateOf(false) }
 
     Column(Modifier.fillMaxSize()) {
-        ScreenHeader("uBlock", "uBlock Origin, blokowanie reklam", back)
+        ScreenHeader("uBlock", "uBlock Origin, ad blocker", back)
         Column(
             Modifier
                 .weight(1f)
@@ -233,21 +250,21 @@ private fun UblockScreen(back: () -> Unit, go: (Screen) -> Unit) {
         ) {
             Card {
                 Column {
-                    InfoRow("Zainstalowana wersja", installed ?: "jeszcze nieznana")
+                    InfoRow("Installed version", installed ?: "not known yet")
                     Divider()
                     InfoRow(
-                        "Ostatnie sprawdzenie",
-                        if (checkTime == 0L) "jeszcze nie było"
+                        "Last check",
+                        if (checkTime == 0L) "never"
                         else SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.US).format(Date(checkTime)),
                     )
                     Divider()
-                    InfoRow("Wynik", checkResult ?: "-")
+                    InfoRow("Result", checkResult ?: "-")
                 }
             }
-            SectionLabel("Aktualizacja dodatku", Modifier.padding(top = 8.dp))
+            SectionLabel("Add-on update", Modifier.padding(top = 8.dp))
             Card {
                 Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                    PillButton(if (checking) "Sprawdzam..." else "Sprawdź teraz") {
+                    PillButton(if (checking) "Checking..." else "Check now") {
                         if (checking) return@PillButton
                         checking = true
                         Browser.updateUblockNow(context) { result ->
@@ -261,12 +278,12 @@ private fun UblockScreen(back: () -> Unit, go: (Screen) -> Unit) {
                     message?.let { Txt(it, size = 13.sp, color = Pal.Text2, maxLines = 4, lineHeight = 19.sp) }
                 }
             }
-            SectionLabel("Listy filtrów", Modifier.padding(top = 8.dp))
+            SectionLabel("Filter lists", Modifier.padding(top = 8.dp))
             Card {
                 Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                    PillButton("Odśwież listy filtrów") { go(Screen.FilterLists) }
+                    PillButton("Refresh filter lists") { go(Screen.FilterLists) }
                     Txt(
-                        "Otwiera stronę uBlock \"Listy filtrów\". Stuknij tam \"Zaktualizuj teraz\" (przycisk jest szary, gdy wszystkie listy są aktualne). Stronę można powiększyć palcami.",
+                        "Opens the uBlock \"Filter lists\" page. Tap \"Update now\" there (the button is grey when all lists are up to date). Pinch to zoom the page.",
                         size = 13.sp, color = Pal.Text2, maxLines = 6, lineHeight = 19.sp,
                     )
                 }
@@ -290,13 +307,30 @@ private fun FilterListsScreen(back: () -> Unit) {
         onDispose { if (session.isOpen) session.close() }
     }
     Column(Modifier.fillMaxSize()) {
-        ScreenHeader("Listy filtrów", "uBlock Origin", back)
+        ScreenHeader("Filter lists", "uBlock Origin", back)
         AndroidView(
             factory = { ctx -> GeckoView(ctx).apply { setSession(session) } },
             onRelease = { it.releaseSession() },
             modifier = Modifier.weight(1f).fillMaxWidth(),
         )
         Spacer(Modifier.navigationBarsPadding())
+    }
+}
+
+/** Przycisk wyboru: wybrany podświetlony jak pozycja w menu, pozostałe tylko z obramowaniem. */
+@Composable
+private fun ChoiceButton(label: String, selected: Boolean, onClick: () -> Unit) {
+    Box(
+        Modifier
+            .height(40.dp)
+            .clip(RoundedCornerShape(20.dp))
+            .then(if (selected) Modifier.background(SelectedBrush) else Modifier)
+            .border(1.dp, Pal.Line, RoundedCornerShape(20.dp))
+            .clickable(onClick = onClick)
+            .padding(horizontal = 16.dp),
+        contentAlignment = Alignment.Center,
+    ) {
+        Txt(label, size = 14.sp, weight = if (selected) FontWeight.SemiBold else FontWeight.Medium, color = if (selected) Pal.Text else Pal.Text2)
     }
 }
 
@@ -320,7 +354,7 @@ private fun PillButton(label: String, onClick: () -> Unit) {
 @Composable
 private fun AboutScreen(back: () -> Unit, go: (Screen) -> Unit) {
     Column(Modifier.fillMaxSize()) {
-        ScreenHeader("O aplikacji", null, back)
+        ScreenHeader("About", null, back)
         Column(
             Modifier
                 .weight(1f)
@@ -331,57 +365,57 @@ private fun AboutScreen(back: () -> Unit, go: (Screen) -> Unit) {
             Card {
                 Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                     Wordmark(22)
-                    Txt("Autor: Tomasz Pieczara", size = 14.sp)
+                    Txt("Author: Tomasz Pieczara", size = 14.sp)
                 }
             }
             Card {
                 Column {
-                    ActionRow(Ic.Star, "Oceń aplikację w Google Play")
+                    ActionRow(Ic.Star, "Rate on Google Play")
                     Divider()
-                    ActionRow(Ic.Update, "Sprawdź aktualizacje")
+                    ActionRow(Ic.Update, "Check for updates")
                 }
             }
             Card {
                 Column {
-                    InfoRow("Wersja", BuildConfig.VERSION_NAME)
+                    InfoRow("Version", BuildConfig.VERSION_NAME)
                     Divider()
                     InfoRow("Build", BuildConfig.BUILD_STAMP)
                 }
             }
             Card {
                 Column {
-                    InfoRow("Kontakt", CONTACT_EMAIL, Ic.Mail)
+                    InfoRow("Contact", CONTACT_EMAIL, Ic.Mail)
                     Divider()
-                    InfoRow("Strona", WEBSITE, Ic.Globe)
+                    InfoRow("Website", WEBSITE, Ic.Globe)
                 }
             }
             ExpandableTile(
-                "Polityka prywatności",
-                "TubeAUTO nie zbiera, nie wysyła ani nie przechowuje żadnych danych osobowych poza Twoim telefonem. " +
-                    "Aplikacja łączy się z internetem tylko po to, żeby wyświetlić strony, które otwierasz (np. YouTube), " +
-                    "i sprawdzić aktualizacje wbudowanego uBlock Origin. Odwiedzane strony działają według własnych zasad. " +
-                    "Bez kont, bez reklam, bez analityki, bez śledzenia.",
+                "Privacy policy",
+                "TubeAUTO does not collect, send or store any personal data outside your phone. " +
+                    "The app connects to the internet only to show the pages you open (e.g. YouTube) " +
+                    "and to check for updates of the built-in uBlock Origin. The pages you visit follow their own policies. " +
+                    "No accounts, no ads, no analytics, no tracking.",
             )
             ExpandableTile(
-                "Warunki korzystania",
-                "TubeAUTO to prywatna aplikacja wyświetlająca strony internetowe na ekranie auta. " +
-                    "Oglądaj tylko na postoju, w czasie jazdy uwaga należy do drogi. " +
-                    "Aplikacja jest udostępniana „tak jak jest”, bez gwarancji nieprzerwanego lub bezbłędnego działania. " +
-                    "Autor nie ponosi żadnej odpowiedzialności za szkody wynikające z korzystania z aplikacji - korzystasz z niej na własne ryzyko.",
+                "Terms of use",
+                "TubeAUTO is a private app that shows web pages on your car screen. " +
+                    "Watch only when parked - while driving, keep your attention on the road. " +
+                    "The app is provided \"as is\", without any guarantee of uninterrupted or error-free operation. " +
+                    "The author accepts no liability for any damage resulting from the use of the app - you use it at your own risk.",
             )
             ExpandableTile(
-                "Kontakt / Zgłoś błąd / Propozycja funkcji",
-                "Znalazłeś błąd albo masz pomysł na nową funkcję? A może chcesz się po prostu przywitać? " +
-                    "Napisz na $CONTACT_EMAIL - każdą wiadomość czytam osobiście.",
+                "Contact / Report a bug / Feature request",
+                "Found a bug or have an idea for a new feature? Or just want to say hello? " +
+                    "Write to $CONTACT_EMAIL - I read every message myself.",
             )
             ExpandableTile(
-                "Prawa autorskie",
-                "© 2026 Tomasz Pieczara. Wszelkie prawa zastrzeżone. Kod źródłowy, zasoby i dokumentacja tej aplikacji są własnością autora. " +
-                    "Kopiowanie, modyfikowanie, rozpowszechnianie lub sprzedaż całości lub części kodu, w postaci źródłowej lub skompilowanej, " +
-                    "bez pisemnej zgody autora jest zabronione.",
+                "Copyright",
+                "© 2026 Tomasz Pieczara. All rights reserved. The source code, resources and documentation of this app are the property of the author. " +
+                    "Copying, modifying, distributing or selling all or part of the code, in source or compiled form, " +
+                    "without the written permission of the author is prohibited.",
             )
             Card {
-                ActionRow(Ic.Info, "Licencje open source") { go(Screen.Licenses) }
+                ActionRow(Ic.Info, "Open source licenses") { go(Screen.Licenses) }
             }
             Spacer(Modifier.height(8.dp))
         }
@@ -396,7 +430,7 @@ private val COMPONENTS = listOf(
     Component("uBlock Origin", "Raymond Hill", "GNU General Public License v3"),
     Component("Android for Cars App Library", "Google", "Apache License 2.0"),
     Component("Jetpack Compose, AndroidX", "Google", "Apache License 2.0"),
-    Component("Inter (czcionka)", "Rasmus Andersson", "SIL Open Font License 1.1"),
+    Component("Inter (font)", "Rasmus Andersson", "SIL Open Font License 1.1"),
 )
 
 @Composable
@@ -405,7 +439,7 @@ private fun LicensesScreen(back: () -> Unit) {
     val ofl = remember { context.resources.openRawResource(R.raw.license_ofl).bufferedReader().use { it.readText() } }
     val apache = remember { context.resources.openRawResource(R.raw.license_apache2).bufferedReader().use { it.readText() } }
     Column(Modifier.fillMaxSize()) {
-        ScreenHeader("Licencje open source", "Zbudowane z użyciem", back)
+        ScreenHeader("Open source licenses", "Built with", back)
         Column(
             Modifier
                 .weight(1f)
@@ -424,7 +458,7 @@ private fun LicensesScreen(back: () -> Unit) {
                     }
                 }
             }
-            SectionLabel("Teksty licencji", Modifier.padding(top = 8.dp))
+            SectionLabel("License texts", Modifier.padding(top = 8.dp))
             ExpandableTile("SIL Open Font License 1.1", ofl, maxLines = 400)
             ExpandableTile("Apache License 2.0", apache, maxLines = 400)
             Spacer(Modifier.height(8.dp))
@@ -441,7 +475,7 @@ private fun ScreenHeader(title: String, subtitle: String?, onBack: () -> Unit, a
         Modifier.fillMaxWidth().statusBarsPadding().height(60.dp).padding(start = 4.dp, end = 8.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        IconTap(Ic.Back, "Wstecz", onBack, tint = Pal.Text)
+        IconTap(Ic.Back, "Back", onBack, tint = Pal.Text)
         Column(Modifier.weight(1f)) {
             Txt(title, size = 19.sp, weight = FontWeight.SemiBold)
             if (subtitle != null) Txt(subtitle, size = 12.sp, color = Pal.Text3)

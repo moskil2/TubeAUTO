@@ -3,7 +3,7 @@
   "name": "TubeAUTO - poprawka pełnego ekranu",
   "version": "1.1",
   "browser_specific_settings": {
-    "gecko": { "id": "fsfix@youtubeauto.app" }
+    "gecko": { "id": "fsfix@tubeauto.app" }
   },
   "content_scripts": [
     {

@@ -1,4 +1,4 @@
-package app.youtubeauto
+package app.tubeauto
 
 import android.content.Context
 import android.media.AudioAttributes

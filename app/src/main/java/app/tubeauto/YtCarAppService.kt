@@ -1,4 +1,4 @@
-package app.youtubeauto
+package app.tubeauto
 
 import android.content.Intent
 import androidx.car.app.CarAppService
