@@ -38,6 +38,8 @@ Requirements: Android 8.0 or higher, 64-bit ARM phone (arm64-v8a), Android Auto 
 
 ## Install
 
+**Step-by-step guide with screenshots (Polish): [INSTRUKCJA.md](INSTRUKCJA.md)**
+
 You need two apps: Shizuku and TubeAUTO.
 
 1. Install [Shizuku from Google Play](https://play.google.com/store/apps/details?id=moe.shizuku.privileged.api).
