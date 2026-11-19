@@ -1,4 +1,8 @@
-# TubeAUTO
+<p align="center">
+  <img src="ikona/icon.png" width="120" alt="TubeAUTO icon" />
+</p>
+
+<h1 align="center">TubeAUTO</h1>
 
 TubeAUTO shows YouTube and other web pages on your Android Auto car screen. It uses GeckoView,
 the browser engine of Firefox, with uBlock Origin built in, so pages load without ads.
@@ -19,82 +23,45 @@ Watch only when parked. While driving, keep your attention on the road.
 
 ## Screenshots
 
-| Android Auto app list | Phone: main screen | Phone: menu |
-|---|---|---|
-| ![Android Auto app list](screenshots/android-auto-apps.png) | ![Main screen](screenshots/phone-main.jpg) | ![Menu](screenshots/phone-menu.jpg) |
+| Main screen | Menu | Settings | uBlock |
+|---|---|---|---|
+| <img src="screenshots/phone-main.jpg" width="200" alt="Main screen" /> | <img src="screenshots/phone-menu.jpg" width="200" alt="Menu" /> | <img src="screenshots/phone-settings.jpg" width="200" alt="Settings" /> | <img src="screenshots/phone-ublock.jpg" width="200" alt="uBlock" /> |
 
-| Phone: Settings | Phone: uBlock |
-|---|---|
-| ![Settings](screenshots/phone-settings.jpg) | ![uBlock](screenshots/phone-ublock.jpg) |
+<img src="screenshots/android-auto-apps.png" width="600" alt="TubeAUTO in the Android Auto app list" />
 
 ## Download
 
-Get the APK from [Releases](../../releases/latest) (file `TubeAUTO-<version>.apk`).
+Download the [latest TubeAUTO](../../releases/latest).
 
-Requirements: Android 8.0 or higher, 64-bit ARM phone (arm64-v8a), Android Auto, and the free
-app [Shizuku](https://github.com/RikkaApps/Shizuku) (only needed once, to enable TubeAUTO in
-Android Auto).
+Requirements: Android 8.0 or higher, 64-bit ARM phone (arm64-v8a), Android Auto and
+[Shizuku from Google Play](https://play.google.com/store/apps/details?id=moe.shizuku.privileged.api).
 
 ## Install
 
-Android Auto shows apps of this type only when they come from Google Play. TubeAUTO is not on
-Google Play, so it marks itself as installed from Google Play with the help of Shizuku. The
-"Unknown sources" option in the Android Auto developer settings does not help for this type of
-app, you do not need it.
+You need two apps: Shizuku and TubeAUTO.
 
-### 1. Install Shizuku
+1. Install [Shizuku from Google Play](https://play.google.com/store/apps/details?id=moe.shizuku.privileged.api).
+2. Open Shizuku and start it with **Start via Wireless debugging** (Shizuku shows you how).
+3. Download the [latest TubeAUTO](../../releases/latest), open it and tap **Install**.
+4. Open TubeAUTO, tap **Enable in Android Auto**, allow what Android asks, then tap **Update**.
+   The card shows **Ready**.
+5. Connect the phone to the car and open **TubeAUTO** from the car's app list.
 
-Install Shizuku from Google Play or from
-[github.com/RikkaApps/Shizuku/releases](https://github.com/RikkaApps/Shizuku/releases).
+Shizuku is only needed for step 4. After every TubeAUTO update, do step 4 again.
 
-### 2. Start Shizuku
+<details>
+<summary>Problems?</summary>
 
-Shizuku has to be running only while you do step 4. After a phone restart it is stopped again,
-which is fine: start it again only when you need it (for example after a TubeAUTO update).
+- **Shizuku does not start without a computer:** connect the phone by USB to a computer with
+  [adb](https://developer.android.com/tools/releases/platform-tools), turn on USB debugging, open
+  **Start by connecting to a computer** in Shizuku and run the command shown there.
+- **"Enable in Android Auto" says Shizuku is not running:** start Shizuku again (step 2). Shizuku
+  stops after every phone restart.
+- **TubeAUTO is not in the car's app list:** on the phone open Android Auto settings >
+  **Customize launcher** and turn TubeAUTO on. Check that the card in TubeAUTO shows **Ready**.
+- **The car screen stays black:** briefly turn on the phone screen (press the power button once).
 
-Without a computer (Android 11 or higher, phone connected to Wi-Fi):
-
-1. Turn on Developer options: phone Settings > About phone > Software information > tap
-   **Build number** 7 times.
-2. Open Shizuku, under **Start via Wireless debugging** tap **Pairing**. Shizuku shows a
-   notification for the pairing code.
-3. Open phone Settings > Developer options > **Wireless debugging**, turn it on and tap
-   **Pair device with pairing code**. Type the code shown there into the Shizuku notification.
-4. Back in Shizuku, tap **Start**. Shizuku shows "Shizuku is running".
-
-With a computer (any Android version):
-
-1. Turn on Developer options (as above) and **USB debugging** in Developer options.
-2. Connect the phone by USB to a computer with
-   [adb](https://developer.android.com/tools/releases/platform-tools) and allow USB debugging on
-   the phone.
-3. In Shizuku, open **Start by connecting to a computer**, run the command shown there on the
-   computer. Shizuku shows "Shizuku is running".
-
-### 3. Install TubeAUTO
-
-Download `TubeAUTO-<version>.apk` on the phone and open it. Android asks to allow installing apps
-from this source (browser or file manager): allow it, then tap **Install**.
-
-### 4. Enable TubeAUTO in Android Auto
-
-1. Open TubeAUTO. At the bottom of the main screen the **Android Auto** card shows "Not enabled".
-2. Tap **Enable in Android Auto**.
-3. Shizuku asks for permission: tap **Allow all the time**.
-4. On Android 14 and lower, Android asks to allow "Install unknown apps" for TubeAUTO: turn it on,
-   go back to TubeAUTO and tap **Enable in Android Auto** again.
-5. The Android installer opens: tap **Update**.
-6. The card now shows **Ready**.
-
-### 5. Start in the car
-
-1. Connect the phone to the car (cable or wireless Android Auto).
-2. Open the app list on the car screen and tap **TubeAUTO**. YouTube opens.
-3. If TubeAUTO is not in the list: on the phone open Android Auto settings > **Customize
-   launcher** and turn TubeAUTO on.
-
-TubeAUTO registers as a navigation app, which is the only app type allowed to draw its own image
-on the car screen. Use BACK, HOME, GOOGLE and EXIT at the side of the car screen.
+</details>
 
 ## Updates
 
@@ -111,8 +78,6 @@ enabled again.
   (press the power button once); the picture appears right away.
 - Captions and quality from Settings are applied a few seconds after a video starts. Changes in
   Settings apply from the next video.
-- Dark or light page theme: choose it in YouTube itself (YouTube settings > General >
-  Appearance).
 
 ## Changes
 
