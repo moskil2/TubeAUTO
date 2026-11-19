@@ -12,6 +12,8 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
@@ -54,6 +56,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import app.tubeauto.AutoInstall
 import app.tubeauto.BuildConfig
 import app.tubeauto.Browser
 import app.tubeauto.Settings
@@ -118,6 +121,42 @@ private fun MainPhoneScreen(openMenu: () -> Unit) {
             GlassIcon(Ic.Hamburger, "Menu", openMenu)
         }
         Box(Modifier.align(Alignment.Center)) { Wordmark(34) }
+        Box(
+            Modifier
+                .align(Alignment.BottomCenter)
+                .navigationBarsPadding()
+                .padding(16.dp),
+        ) { AndroidAutoCard() }
+    }
+}
+
+/** Stan w Android Auto i przycisk włączenia (ponowna instalacja przez Shizuku). */
+@Composable
+private fun AndroidAutoCard() {
+    val context = LocalContext.current
+    val tick by AutoInstall.resumeTick
+    val enabled = remember(tick) { AutoInstall.isEnabled(context) }
+    var message by remember { mutableStateOf<String?>(null) }
+    Card {
+        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Txt("Android Auto", Modifier.weight(1f), size = 14.sp, weight = FontWeight.Medium)
+                Txt(
+                    if (enabled) "Ready" else "Not enabled",
+                    size = 14.sp, weight = FontWeight.SemiBold, color = if (enabled) Pal.Text else Pal.Accent,
+                )
+            }
+            if (!enabled) {
+                Txt(
+                    "Android Auto shows only apps installed from Google Play. With Shizuku running, TubeAUTO can reinstall itself so that Android Auto accepts it. Repeat after every update.",
+                    size = 13.sp, color = Pal.Text2, maxLines = 6, lineHeight = 19.sp,
+                )
+                PillButton("Enable in Android Auto") {
+                    (context as? Activity)?.let { AutoInstall.enable(it) { msg -> message = msg } }
+                }
+                message?.let { Txt(it, size = 13.sp, color = Pal.Text2, maxLines = 5, lineHeight = 19.sp) }
+            }
+        }
     }
 }
 
@@ -200,27 +239,42 @@ private fun SideMenu(open: Boolean, current: Screen, onNavigate: (Screen) -> Uni
     }
 }
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun SettingsScreen(back: () -> Unit) {
     val context = LocalContext.current
-    var theme by remember { mutableStateOf(Settings.theme(context)) }
+    var captions by remember { mutableStateOf(Settings.captions(context)) }
+    var quality by remember { mutableStateOf(Settings.quality(context)) }
     Column(Modifier.fillMaxSize()) {
         ScreenHeader("Settings", null, back)
-        Column(Modifier.weight(1f).padding(horizontal = 16.dp, vertical = 4.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            SectionLabel("Page theme")
+        Column(
+            Modifier.weight(1f).verticalScroll(rememberScrollState()).padding(horizontal = 16.dp, vertical = 4.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            SectionLabel("YouTube video")
             Card {
                 Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Settings.Theme.entries.forEach { t ->
-                            ChoiceButton(t.label, selected = t == theme) {
-                                theme = t
-                                Browser.setTheme(context, t)
+                    Txt("Captions / Subtitles", size = 14.sp, weight = FontWeight.Medium)
+                    FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Settings.Captions.entries.forEach { c ->
+                            ChoiceButton(c.label, selected = c == captions) {
+                                captions = c
+                                Settings.saveCaptions(context, c)
+                            }
+                        }
+                    }
+                    Txt("Quality", Modifier.padding(top = 6.dp), size = 14.sp, weight = FontWeight.Medium)
+                    FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Settings.Quality.entries.forEach { q ->
+                            ChoiceButton(q.label, selected = q == quality) {
+                                quality = q
+                                Settings.saveQuality(context, q)
                             }
                         }
                     }
                     Txt(
-                        "Dark or light mode for YouTube and other pages. System follows the phone setting. If a theme is chosen in YouTube itself, YouTube uses that one.",
-                        size = 13.sp, color = Pal.Text2, maxLines = 5, lineHeight = 19.sp,
+                        "Applied to every YouTube video on the car screen, from the next video on. \"YouTube\" and \"Auto\" leave the choice to YouTube. If a video has no such quality, the nearest lower one is used. With a weak connection YouTube may still lower the quality.",
+                        size = 13.sp, color = Pal.Text2, maxLines = 6, lineHeight = 19.sp,
                     )
                 }
             }
@@ -430,6 +484,8 @@ private val COMPONENTS = listOf(
     Component("uBlock Origin", "Raymond Hill", "GNU General Public License v3"),
     Component("Android for Cars App Library", "Google", "Apache License 2.0"),
     Component("Jetpack Compose, AndroidX", "Google", "Apache License 2.0"),
+    Component("Shizuku API", "RikkaApps", "Apache License 2.0"),
+    Component("UnknownAuto (Android Auto install method)", "GitMag", "MIT License"),
     Component("Inter (font)", "Rasmus Andersson", "SIL Open Font License 1.1"),
 )
 
@@ -438,6 +494,7 @@ private fun LicensesScreen(back: () -> Unit) {
     val context = LocalContext.current
     val ofl = remember { context.resources.openRawResource(R.raw.license_ofl).bufferedReader().use { it.readText() } }
     val apache = remember { context.resources.openRawResource(R.raw.license_apache2).bufferedReader().use { it.readText() } }
+    val mit = remember { context.resources.openRawResource(R.raw.license_mit).bufferedReader().use { it.readText() } }
     Column(Modifier.fillMaxSize()) {
         ScreenHeader("Open source licenses", "Built with", back)
         Column(
@@ -461,6 +518,7 @@ private fun LicensesScreen(back: () -> Unit) {
             SectionLabel("License texts", Modifier.padding(top = 8.dp))
             ExpandableTile("SIL Open Font License 1.1", ofl, maxLines = 400)
             ExpandableTile("Apache License 2.0", apache, maxLines = 400)
+            ExpandableTile("MIT License (UnknownAuto)", mit, maxLines = 100)
             Spacer(Modifier.height(8.dp))
         }
         Spacer(Modifier.navigationBarsPadding())

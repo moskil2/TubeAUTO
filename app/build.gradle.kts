@@ -34,8 +34,8 @@ android {
         applicationId = "app.tubeauto"
         minSdk = 26
         targetSdk = 36
-        versionCode = 30
-        versionName = "0.3.0"
+        versionCode = 36
+        versionName = "0.3.6"
         // Data budowania do ekranu "O aplikacji"
         buildConfigField("String", "BUILD_STAMP", "\"${SimpleDateFormat("yyyy-MM-dd HH:mm").format(Date())}\"")
 
@@ -72,6 +72,8 @@ android {
     buildFeatures {
         compose = true
         buildConfig = true
+        // Usługa uruchamiana przez Shizuku (IShellService.aidl)
+        aidl = true
     }
 
     compileOptions {
@@ -89,6 +91,10 @@ dependencies {
     implementation("androidx.compose.ui:ui")
     implementation("androidx.compose.foundation:foundation")
     implementation("androidx.activity:activity-compose:1.10.1")
+
+    // Shizuku: włączenie w Android Auto bez osobnego instalatora
+    implementation("dev.rikka.shizuku:api:13.1.5")
+    implementation("dev.rikka.shizuku:provider:13.1.5")
 }
 
 // Po budowaniu kopia APK trafia do folderu głównego projektu jako TubeAUTO-<wersja>.apk

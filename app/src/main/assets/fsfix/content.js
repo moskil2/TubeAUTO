@@ -36,3 +36,84 @@ window.addEventListener("touchend", (e) => {
   const f = Math.min(1, Math.max(0, (t.clientX - r.left) / r.width));
   video.currentTime = f * video.duration;
 }, true);
+
+// Napisy i jakość filmów z ustawień aplikacji (telefon: Settings > YouTube video).
+// Ustawienia przychodzą z aplikacji przez wiadomość "tubeauto"; odtwarzacz YouTube
+// (#movie_player) jest w kodzie strony, więc wołamy go przez wrappedJSObject.
+// Wynik każdej próby idzie do dziennika aplikacji.
+const toApp = (msg) => browser.runtime.sendNativeMessage("tubeauto", msg);
+const appLog = (text) => toApp({ log: text }).catch(() => {});
+const QUALITY_ORDER = ["hd2160", "hd1440", "hd1080", "hd720", "large", "medium", "small", "tiny"];
+let doneVideo = "";
+let tries = 0;
+
+function currentVideo() {
+  return new URLSearchParams(location.search).get("v") || "";
+}
+
+function player() {
+  const el = document.getElementById("movie_player");
+  const p = el && el.wrappedJSObject;
+  return p && typeof p.getAvailableQualityLevels === "function" ? p : null;
+}
+
+function applyTo(p, s) {
+  const levels = Array.from(p.getAvailableQualityLevels() || []);
+  let q = "bez zmian";
+  if (s.quality !== "auto" && levels.length) {
+    // Wybrana jakość albo najbliższa niższa, jeśli filmu nie ma w wybranej
+    const from = Math.max(0, QUALITY_ORDER.indexOf(s.quality));
+    const target = QUALITY_ORDER.slice(from).find((l) => levels.includes(l)) || levels[levels.length - 1];
+    if (typeof p.setPlaybackQualityRange === "function") p.setPlaybackQualityRange(target, target);
+    if (typeof p.setPlaybackQuality === "function") p.setPlaybackQuality(target);
+    q = target + ", teraz " + (typeof p.getPlaybackQuality === "function" ? p.getPlaybackQuality() : "?");
+  }
+  let c = "bez zmian";
+  if (s.captions === "off" && typeof p.unloadModule === "function") {
+    p.unloadModule("captions");
+    c = "wyłączone";
+  } else if (s.captions === "on" && typeof p.loadModule === "function") {
+    p.loadModule("captions");
+    c = "włączone";
+  }
+  return `jakości [${levels.join(",")}], jakość ${q}, napisy ${c}`;
+}
+
+async function applySettings() {
+  const id = currentVideo();
+  if (!id) {
+    doneVideo = "";
+    return;
+  }
+  if (id === doneVideo) return;
+  const p = player();
+  if (!p) return;
+  doneVideo = id;
+  try {
+    const raw = await toApp({ get: "settings" });
+    appLog(`film ${id}: ustawienia z aplikacji: ${raw}`);
+    const s = typeof raw === "string" ? JSON.parse(raw) : raw;
+    if (s.quality === "auto" && s.captions === "default") return;
+    appLog(`film ${id} (start): ${applyTo(p, s)}`);
+    // YouTube potrafi później sam włączyć napisy lub zmienić jakość: powtórka po chwili
+    for (const delay of [3000, 8000]) {
+      setTimeout(() => {
+        const p2 = player();
+        if (p2 && currentVideo() === id) {
+          const r = applyTo(p2, s);
+          if (delay === 8000) appLog(`film ${id} (po 8 s): ${r}`);
+        }
+      }, delay);
+    }
+  } catch (e) {
+    if (tries++ < 3) {
+      appLog(`film ${id}: ustawienia nieudane: ${e}`);
+      doneVideo = "";
+    }
+  }
+}
+
+// 0.3.5: diagnoza - znak, że dodatek ruszył na stronie
+toApp({ log: `dodatek ruszył: ${location.href}` }).catch((e) => console.log("TubeAUTO: brak połączenia z aplikacją: " + e));
+
+setInterval(applySettings, 1000);

@@ -10,6 +10,8 @@ import org.mozilla.geckoview.AllowOrDeny
 import org.mozilla.geckoview.GeckoResult
 import org.mozilla.geckoview.GeckoRuntime
 import org.mozilla.geckoview.GeckoRuntimeSettings
+import org.mozilla.geckoview.GeckoSession
+import org.json.JSONObject
 import org.mozilla.geckoview.OrientationController
 import org.mozilla.geckoview.WebExtension
 import org.mozilla.geckoview.WebExtensionController
@@ -50,13 +52,6 @@ object Browser {
         whenUblockReady { ext -> checkUpdate(rt.webExtensionController, ext, context.applicationContext, done) }
     }
 
-    /** Zapisuje tryb stron i od razu zmienia go w działającym silniku. */
-    fun setTheme(context: Context, theme: Settings.Theme) {
-        Settings.saveTheme(context, theme)
-        runtime?.settings?.setPreferredColorScheme(theme.gecko)
-        Log.i(TAG, "Tryb stron: ${theme.name}")
-    }
-
     fun runtime(context: Context, dpi: Int, width: Int, height: Int): GeckoRuntime =
         runtime ?: GeckoRuntime.create(
             context.applicationContext,
@@ -66,8 +61,6 @@ object Browser {
                 .screenSizeOverride(width, height)
                 // Podgląd strony z Firefoksa na komputerze (about:debugging, tylko przez USB)
                 .remoteDebuggingEnabled(BuildConfig.DEBUG)
-                // Tryb ciemny/jasny stron z ustawień aplikacji (Settings > Page theme)
-                .preferredColorScheme(Settings.theme(context).gecko)
                 .build()
         ).also {
             runtime = it
@@ -76,12 +69,65 @@ object Browser {
             setupFullscreenFix(it)
         }
 
-    /** Wbudowany dodatek: sygnał zmiany rozmiaru przy pełnym ekranie (assets/fsfix). */
+    /** Wbudowany dodatek: pełny ekran, przewijanie paskiem, napisy i jakość (assets/fsfix). */
     private fun setupFullscreenFix(rt: GeckoRuntime) {
         rt.webExtensionController.installBuiltIn("resource://android/assets/fsfix/").accept(
-            { ext -> Log.i(TAG, "Poprawka pełnego ekranu: ${ext?.metaData?.version}") },
+            { ext ->
+                Log.i(TAG, "Poprawka pełnego ekranu: ${ext?.metaData?.version}")
+                if (ext != null) {
+                    fsfix = ext
+                    val waiting = fsfixWaiters.toList()
+                    fsfixWaiters.clear()
+                    waiting.forEach { it(ext) }
+                }
+            },
             { e -> Log.w(TAG, "Poprawka pełnego ekranu: instalacja nieudana", e) }
         )
+    }
+
+    private var fsfix: WebExtension? = null
+    private val fsfixWaiters = mutableListOf<(WebExtension) -> Unit>()
+
+    /**
+     * Wiadomości od wbudowanego dodatku w tej karcie: prośba o ustawienia filmów
+     * (Settings > YouTube video) i wpisy do dziennika.
+     */
+    fun attachVideoSettings(context: Context, session: GeckoSession) {
+        val app = context.applicationContext
+        val attach = { ext: WebExtension ->
+            session.webExtensionController.setMessageDelegate(ext, object : WebExtension.MessageDelegate {
+                override fun onMessage(
+                    nativeApp: String,
+                    message: Any,
+                    sender: WebExtension.MessageSender
+                ): GeckoResult<Any>? {
+                    // 0.3.5: diagnoza - każda wiadomość z dodatku do dziennika
+                    Log.i(TAG, "Wiadomość z dodatku (${message.javaClass.simpleName}): $message")
+                    return try {
+                        val m = message as? JSONObject ?: JSONObject(message.toString())
+                        when {
+                            m.has("log") -> {
+                                Log.i(TAG, "YouTube: ${m.optString("log")}")
+                                GeckoResult.fromValue("ok")
+                            }
+                            // Odpowiedź jako zwykły tekst JSON (dodatek sam go odczytuje)
+                            m.optString("get") == "settings" -> GeckoResult.fromValue(
+                                JSONObject()
+                                    .put("captions", Settings.captions(app).yt)
+                                    .put("quality", Settings.quality(app).yt)
+                                    .toString()
+                            )
+                            else -> GeckoResult.fromValue("nieznana")
+                        }
+                    } catch (e: Exception) {
+                        Log.i(TAG, "Wiadomość z dodatku nieczytelna: $e")
+                        GeckoResult.fromValue("błąd")
+                    }
+                }
+            }, "tubeauto")
+        }
+        val ext = fsfix
+        if (ext != null) attach(ext) else fsfixWaiters.add(attach)
     }
 
     /**

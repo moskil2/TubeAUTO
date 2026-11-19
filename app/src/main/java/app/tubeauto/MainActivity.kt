@@ -19,4 +19,10 @@ class MainActivity : ComponentActivity() {
         )
         setContent { PhoneApp() }
     }
+
+    override fun onResume() {
+        super.onResume()
+        // Odśwież stan "Android Auto" (np. po powrocie z ustawień lub z Shizuku)
+        AutoInstall.resumeTick.intValue++
+    }
 }

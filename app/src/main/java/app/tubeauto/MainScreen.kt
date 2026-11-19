@@ -2,6 +2,8 @@ package app.tubeauto
 
 import android.graphics.Rect
 import android.net.Uri
+import android.os.Handler
+import android.os.Looper
 import android.os.SystemClock
 import android.util.Log
 import android.view.KeyCharacterMap
@@ -74,6 +76,8 @@ class MainScreen(carContext: CarContext) : Screen(carContext) {
                 session.open(
                     Browser.runtime(carContext, container.dpi, container.width, container.height)
                 )
+                // Napisy i jakość filmów z Settings > YouTube video
+                Browser.attachVideoSettings(carContext, session)
                 session.loadUri(Browser.HOME_URL)
             }
             val d = display ?: session.acquireDisplay().also { display = it }
@@ -83,6 +87,12 @@ class MainScreen(carContext: CarContext) : Screen(carContext) {
                     .build()
             )
             session.setActive(true)
+            surfaceReady = true
+            // Tekst wpisany na klawiaturze auta czekał, aż strona wróci na ekran
+            pendingText?.let { text ->
+                pendingText = null
+                main.postDelayed({ sendText(text) }, TYPE_DELAY_MS)
+            }
         }
 
         override fun onVisibleAreaChanged(area: Rect) {
@@ -95,6 +105,7 @@ class MainScreen(carContext: CarContext) : Screen(carContext) {
 
         override fun onSurfaceDestroyed(container: SurfaceContainer) {
             Dziennik.event("ekran auta zniknął")
+            surfaceReady = false
             session.setActive(false)
             display?.surfaceDestroyed()
         }
@@ -140,23 +151,43 @@ class MainScreen(carContext: CarContext) : Screen(carContext) {
     private fun button(title: String, onClick: () -> Unit): Action =
         Action.Builder().setTitle(title).setOnClickListener(onClick).build()
 
+    private val GOOGLE_URL = "https://www.google.com"
+
     private var searchOpen = false
     private var currentUrl = ""
 
+    // 0.3.4: tekst wysłany zanim strona wróciła na ekran auta ginął (Google: puste pole)
+    private val main = Handler(Looper.getMainLooper())
+    private var surfaceReady = false
+    private var pendingText: String? = null
+    private val TYPE_DELAY_MS = 500L
+
     /**
-     * Tekst z klawiatury auta. Na YouTube od razu otwieramy wyniki wyszukiwania.
-     * Na innych stronach wpisujemy tekst w stuknięte pole i naciskamy Enter.
+     * Tekst z klawiatury auta. Na YouTube i Google od razu otwieramy wyniki wyszukiwania.
+     * Na innych stronach wpisujemy tekst w stuknięte pole i naciskamy Enter,
+     * ale dopiero gdy strona wróci na ekran auta.
      */
     private fun typeText(text: String) {
         searchOpen = false
         if (!session.isOpen) return
         Log.i("TubeAUTO", "Wpisany tekst (${text.length} znaków), strona: $currentUrl")
-        if (Uri.parse(currentUrl).host?.endsWith("youtube.com") == true) {
-            session.loadUri(
-                "https://m.youtube.com/results?search_query=" + URLEncoder.encode(text, "UTF-8")
-            )
+        val host = Uri.parse(currentUrl).host ?: ""
+        val query = URLEncoder.encode(text, "UTF-8")
+        if (host.endsWith("youtube.com")) {
+            session.loadUri("https://m.youtube.com/results?search_query=$query")
             return
         }
+        if (host == "google.com" || host.startsWith("www.google.") || host.startsWith("google.")) {
+            session.loadUri("https://www.google.com/search?q=$query")
+            return
+        }
+        if (surfaceReady) main.postDelayed({ sendText(text) }, TYPE_DELAY_MS)
+        else pendingText = text
+    }
+
+    private fun sendText(text: String) {
+        if (!session.isOpen) return
+        Log.i("TubeAUTO", "Wpisuję tekst w pole strony")
         val input = session.textInput
         val now = SystemClock.uptimeMillis()
         input.onKeyMultiple(
@@ -170,11 +201,12 @@ class MainScreen(carContext: CarContext) : Screen(carContext) {
     override fun onGetTemplate(): Template {
         // Powrót z ekranu wpisywania ("Wstecz") też zwalnia blokadę ponownego otwarcia
         searchOpen = false
+        // 0.3.3: BACK, HOME (YouTube), GOOGLE (google.com), EXIT; bez Reload i URL (decyzja użytkownika)
         val strip = ActionStrip.Builder()
-            .addAction(button("Back") { if (session.isOpen) session.goBack() })
-            .addAction(button("Home") { if (session.isOpen) session.loadUri(Browser.HOME_URL) })
-            .addAction(button("Reload") { if (session.isOpen) session.reload() })
-            .addAction(button("Exit") { carContext.finishCarApp() })
+            .addAction(button("BACK") { if (session.isOpen) session.goBack() })
+            .addAction(button("HOME") { if (session.isOpen) session.loadUri(Browser.HOME_URL) })
+            .addAction(button("GOOGLE") { if (session.isOpen) session.loadUri(GOOGLE_URL) })
+            .addAction(button("EXIT") { carContext.finishCarApp() })
             .build()
         return NavigationTemplate.Builder()
             .setActionStrip(strip)
