@@ -19,7 +19,8 @@ the browser engine of Firefox, with uBlock Origin built in, so pages load withou
 - uBlock Origin built in, updated from the phone (menu > uBlock)
 - Enabling in Android Auto from the app itself (needs Shizuku, see Install)
 
-Watch only when parked. While driving, keep your attention on the road.
+Watch only when parked. While driving, keep your attention on the road. The driver alone is
+responsible for following the traffic laws of their country.
 
 ## Screenshots
 
@@ -96,6 +97,14 @@ See [CHANGELOG.md](CHANGELOG.md).
 | Shizuku API | RikkaApps | Apache License 2.0 |
 | UnknownAuto (install method) | GitMag | MIT License |
 | Inter (font) | Rasmus Andersson | SIL Open Font License 1.1 |
+
+## Disclaimer
+
+TubeAUTO is provided "as is", without any warranty. The author accepts no liability for any damage
+resulting from the use or misuse of the app - you use it at your own risk.
+
+TubeAUTO is an independent app, not affiliated with, endorsed or sponsored by YouTube, Google or
+Mozilla. YouTube, Google, Android and Android Auto are trademarks of Google LLC.
 
 ## License
 
